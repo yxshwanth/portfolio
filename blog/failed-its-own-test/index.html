@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>I built a site that publishes its own limits, then it failed its own test | Yashwanth Reddy Mali</title>
+<meta name="description" content="Why this site publishes what my projects cannot do, how that turned into a nervous habit, and what I changed.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%224%22%20fill%3D%22%2314161A%22%2F%3E%3Ctext%20x%3D%2216%22%20y%3D%2224%22%20font-family%3D%22ui-monospace%2CSFMono-Regular%2CMenlo%2Cmonospace%22%20font-size%3D%2221%22%20font-weight%3D%22700%22%20fill%3D%22%239DAEFF%22%20text-anchor%3D%22middle%22%3EY%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="canonical" href="https://yashwanthreddymali.com/blog/failed-its-own-test/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Yashwanth Reddy Mali">
+<meta property="og:url" content="https://yashwanthreddymali.com/blog/failed-its-own-test/">
+<meta property="og:title" content="I built a site that publishes its own limits, then it failed its own test | Yashwanth Reddy Mali">
+<meta property="og:description" content="Why this site publishes what my projects cannot do, how that turned into a nervous habit, and what I changed.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="I built a site that publishes its own limits, then it failed its own test | Yashwanth Reddy Mali">
+<meta name="twitter:description" content="Why this site publishes what my projects cannot do, how that turned into a nervous habit, and what I changed.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/site.css">
+</head>
+<body>
+<div class="progress" aria-hidden="true"></div>
+<div class="shell">
+
+  <header class="rail">
+    <div class="rail-inner">
+      <p class="wordmark"><a href="/">Yashwanth<br>Reddy Mali</a></p>
+      <nav class="rail-nav" aria-label="Primary">
+        <a href="/">Work</a>
+        <a href="/blog/" aria-current="page">Blog</a>
+        <a href="/contact/">Contact</a>
+        <a href="/resume.pdf">R&eacute;sum&eacute;</a>
+        <a href="https://github.com/yxshwanth">GitHub</a>
+        <a href="https://linkedin.com/in/yashwanth-mali">LinkedIn</a>
+      </nav>
+      <div class="rail-status">
+        <strong>Open to work</strong>
+        Backend engineer.<br>Platform, authorization,<br>and systems work.<br>
+        Bay Area or remote.
+      </div>
+    </div>
+  </header>
+
+  <main class="content">
+    <article class="article">
+      <span class="post-date">25 July 2026</span>
+      <h1 class="article-title">I built a site that publishes its own limits, then it failed its own test</h1>
+
+      <div class="article-body">
+        <p>
+          I put this off for about two years.
+        </p>
+
+        <p>
+          Not because it was hard. It's four HTML files and a stylesheet, no build step, no
+          framework, no JavaScript anywhere. I could have finished it in a weekend, and eventually
+          I did. I put it off because a personal site is a public claim that you are worth reading
+          about, and every time I opened an editor to start one, my brain would render, in high
+          detail, the face of a specific senior engineer I met once at a conference in 2024,
+          scrolling my landing page, and going "hm."
+        </p>
+
+        <p>
+          The anxiety was never really about being judged badly. It was about being judged
+          accurately. Those are different fears and the second one is much worse, because there's
+          no argument you can make against it.
+        </p>
+
+        <h2>Every engineering portfolio makes the same unfalsifiable claim</h2>
+
+        <p>
+          I read a lot of them before building this, which was a mistake in roughly the way that
+          reading WebMD is a mistake. They all say the same thing. Built a distributed system.
+          Scalable, production-ready, 3x faster, handles millions of requests. And every engineer
+          who reads that discounts it on contact, because they have written those exact words
+          themselves about something that ran on a laptop under synthetic load for ninety seconds.
+        </p>
+
+        <p>
+          The claim isn't false, usually. It's unfalsifiable, which is worse. If I tell you my
+          query engine is 3.2x faster and stop there, you have to decide whether to trust me, and
+          you don't know me. The number does no work. It's decoration with a decimal point in it.
+        </p>
+
+        <p>
+          So the site got built around the opposite move. Every project says what it enforces, and
+          next to that, what it does not. The 3.2x is optimizer-on versus optimizer-off on my own
+          engine, measured with Criterion against a synthetic TPC-H-style query at about 900k rows,
+          and it is not a comparison to any other system. Now you can price it yourself. I have
+          handed you the tools to discount me correctly, which is a strange thing to want, but it
+          turns out to be the only version of the claim that survives contact with someone
+          competent.
+        </p>
+
+        <p>
+          I would love to tell you this was pure intellectual honesty, and a real amount of it is.
+          Some of it is that if I name the flaw first, you cannot hand it to me, and there is a
+          version of me that has been running that play in conversations since roughly age
+          fourteen. The epistemics and the coping mechanism happen to point the same direction
+          here. I decided not to look too closely at the ratio.
+        </p>
+
+        <h2>The ledger</h2>
+
+        <p>
+          The pattern needed a shape, so it became a ledger. Each project gets two panels.
+          Capability is a credit, marked <code>+</code>, in ultramarine. Every named limit is a
+          debit, marked <code>−</code>, in brass. Double-entry, which is a slightly precious way to
+          describe two divs, but the constraint did real work: brass appears nowhere else on the
+          site. Not in a heading, not in a link, not as an accent. If you see brass, you are
+          reading a limit. The color is load-bearing.
+        </p>
+
+        <p>
+          I was pleased with this for about a week.
+        </p>
+
+        <h2>Then someone actually read it</h2>
+
+        <p>
+          And told me the caveats were eating the work. Roughly half the page was capability and
+          half was disclaimer, and the thing about a fifty-fifty ratio is that it does not read as
+          rigor. It reads as a man apologizing.
+        </p>
+
+        <p>
+          The underlying bug was a category error. I had filed three different kinds of things
+          under one label, and only one of them was a gap.
+        </p>
+
+        <p>
+          <strong>Scope limits.</strong> Arbor is SELECT-only. No subqueries, no HAVING, no cost
+          model. Those are genuine gaps, they belong in the panel, they stay.
+        </p>
+
+        <p>
+          <strong>Measurement caveats.</strong> "This is a k6 benchmark under synthetic load, not
+          production traffic." That is not a gap. That is precision about a number, and it belongs
+          inline, next to the number, where it does its job.
+        </p>
+
+        <p>
+          <strong>Design decisions.</strong> "Deferred containment is a deliberate tradeoff, proof
+          over speed." That is the single smartest thing in Interlock. I had filed it under known
+          gaps, where it read as a confession.
+        </p>
+
+        <p>
+          Look at what that did to the Interlock panel specifically. Three bullets. One of them was
+          "178 tests," which is an achievement. One was a benchmark caveat. One was a design
+          decision I am actively proud of. Zero of them were gaps. I had built a component called
+          known gaps and then filled it with things that were not gaps, which is precisely the
+          failure the component exists to prevent. The tool did not catch the thing it was built to
+          catch, on its first real input, which was me.
+        </p>
+
+        <p>
+          Zenith came out worse. Two bullets under enforces against one under known gaps, on a
+          distributed authorization engine with recursive expansion and cycle detection. The ratio
+          itself was making an argument I did not intend, which is that there was not much there.
+        </p>
+
+        <blockquote>
+          A stance applied uniformly to four projects stops being a stance and becomes a verbal
+          tic. Tics read as insecurity, not rigor.
+        </blockquote>
+
+        <p>
+          There is a real difference between someone who tells you the limits of their work and
+          someone who cannot stop pre-apologizing for it, and I had drifted from the first into the
+          second without noticing. Which, if you have met me, is not a surprising place to end up.
+        </p>
+
+        <h2>What changed</h2>
+
+        <p>
+          The gaps panel now appears twice instead of four times, on Interlock and Arbor, the two
+          projects with genuine scope boundaries. Measurement caveats moved inline, into
+          parentheticals sitting next to the numbers they qualify. Deferred containment got
+          promoted into Interlock's opening paragraph, where it belongs, described as the tradeoff
+          it is rather than the weakness it isn't. Zenith and Dispatch lost the panel entirely and
+          got more substance under enforces instead.
+        </p>
+
+        <p>
+          The ratio is now something like eighty-twenty. The stance survived because it stopped
+          being everywhere. That seems like it should have been obvious, and it was not obvious to
+          me for two months.
+        </p>
+
+        <h2>The parts that are just taste</h2>
+
+        <p>
+          No framework, no build step, no dependencies, no JavaScript. This is not asceticism, it's
+          that a personal site which needs a build pipeline is a personal site you will stop
+          updating in eight months, and I know exactly which kind of person I am about that.
+        </p>
+
+        <p>
+          The project numbers come from a CSS counter, so adding or reordering a project renumbers
+          the section on its own:
+        </p>
+
+        <pre><code>.block      { counter-reset: entry; }
+.entry      { counter-increment: entry; }
+.entry-head::before {
+  content: counter(entry, decimal-leading-zero);
+}</code></pre>
+
+        <p>
+          Three rules, and the register can never disagree with itself. I think about this more
+          than is reasonable.
+        </p>
+
+        <p>
+          There is no dark mode toggle. Your operating system already knows which one you want and
+          it told the browser, so the site just listens. I am not going to make you say it twice.
+          The scroll reveals and the reading progress bar at the top of this post are CSS
+          scroll-driven animations, and where the browser doesn't support them, everything is
+          simply visible. Nothing on this page depends on a script running successfully.
+        </p>
+
+        <p>
+          The whole thing is set in IBM Plex, mono for anything that behaves like an instrument
+          label and serif for prose like this. Hairlines everywhere. Tabular figures so the dates
+          line up down the right edge. The page is trying to look like a register, because the
+          argument it is making is an accounting argument.
+        </p>
+
+        <h2>Known gaps</h2>
+
+        <p>
+          It would be a poor look to write all of this and then not run the site through its own
+          component.
+        </p>
+
+        <div class="ledger">
+          <div class="panel panel--gaps">
+            <p class="panel-label">Known gaps</p>
+            <ul>
+              <li>This is one post. A blog with one post is a claim about future behavior, not evidence of it, and you should read it that way</li>
+              <li>There are no analytics on this site, deliberately, which means every claim I just made about what "reads better" is a guess I have no mechanism to check</li>
+              <li>This page is optimized for maybe forty people. Recruiters screen the resume and will never see it. It is built for engineers who arrive from a GitHub link or an email signature, and I built it anyway</li>
+              <li>The 3.2x is still the number I am least comfortable with, and I have now brought it up three times in one essay, which is its own kind of tell</li>
+            </ul>
+          </div>
+        </div>
+
+        <p>
+          The thing I did not expect is that publishing the limits made the work feel more like
+          mine. When you strip out every claim you cannot personally defend, what is left is
+          smaller, and it is actually yours. I keep turning that over. It seems like it should
+          apply to considerably more than websites.
+        </p>
+
+        <p>
+          Anyway. Four HTML files and a stylesheet. Took two years and a weekend.
+        </p>
+
+        <p>
+          If you think the ledger is still wrong, I would like to hear why:
+          <a href="mailto:me@yashwanthreddymali.com">me@yashwanthreddymali.com</a>.
+        </p>
+      </div>
+    </article>
+  </main>
+</div>
+</body>
+</html>

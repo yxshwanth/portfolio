@@ -1,0 +1,784 @@
+/* ============================================================
+   yashwanthreddymali.com
+
+   Type:   IBM Plex superfamily. Mono as display and instrument
+           label, Sans as UI, Serif for long-form reading.
+   Color:  cool bone paper, ink, deep ultramarine for capability,
+           brass reserved exclusively for stated limits.
+   Idea:   the page is a register. Hairlines, tabular figures,
+           numbered entries, and a ledger where capability is a
+           credit (+) and every named limit is a debit (-).
+   No build step. No dependencies. No JavaScript.
+   ============================================================ */
+
+:root {
+  color-scheme: light;
+
+  --paper:        #E8EAEE;
+  --paper-raised: #F2F4F7;
+  --paper-sunken: #DEE1E7;
+  --ink:          #12141A;
+  --ink-soft:     #4E545F;
+  --ink-faint:    #838A96;
+  --rule:         #C8CCD4;
+  --rule-strong:  #ADB3BE;
+  --accent:       #1F2F94;
+  --accent-wash:  rgba(31, 47, 148, 0.055);
+  --brass:        #7E6117;
+  --brass-wash:   rgba(126, 97, 23, 0.045);
+
+  --measure: 68ch;
+  --rail: 14.5rem;
+  --gutter: clamp(1.5rem, 3.2vw, 2.75rem);
+  --step: clamp(1rem, 0.6rem + 1.4vw, 1.5rem);
+
+  --mono:  "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --sans:  "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --serif: "IBM Plex Serif", Georgia, serif;
+
+  --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --paper:        #101216;
+    --paper-raised: #171A20;
+    --paper-sunken: #0B0D10;
+    --ink:          #E7E9ED;
+    --ink-soft:     #9DA4B0;
+    --ink-faint:    #6B7280;
+    --rule:         #272C35;
+    --rule-strong:  #39404B;
+    --accent:       #9DAEFF;
+    --accent-wash:  rgba(157, 174, 255, 0.07);
+    --brass:        #D9B25C;
+    --brass-wash:   rgba(217, 178, 92, 0.06);
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.6;
+  font-optical-sizing: auto;
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--paper);
+}
+
+/* ---------- links ----------
+   Underline sits low and thin, then thickens into the accent on
+   hover rather than swapping color abruptly. */
+
+a {
+  color: inherit;
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--rule-strong);
+  text-underline-offset: 0.22em;
+  transition: color 0.18s var(--ease),
+              text-decoration-color 0.18s var(--ease),
+              text-decoration-thickness 0.18s var(--ease);
+}
+a:hover {
+  color: var(--accent);
+  text-decoration-color: var(--accent);
+  text-decoration-thickness: 1.5px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 1px;
+}
+
+code, kbd, samp, pre { font-family: var(--mono); }
+
+/* ---------- shell ----------
+   The rail's right border is the spine of the register: it runs
+   the full height of the page because grid items stretch. */
+
+.shell {
+  display: grid;
+  grid-template-columns: var(--rail) minmax(0, 1fr);
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: clamp(2.5rem, 5vw, 5rem) var(--step) 7rem;
+}
+
+.rail {
+  position: relative;
+  border-right: 1px solid var(--rule);
+  padding-right: var(--gutter);
+}
+
+.content {
+  min-width: 0;
+  padding-left: var(--gutter);
+}
+
+/* ---------- left rail ---------- */
+
+.rail-inner { position: sticky; top: clamp(2.5rem, 5vw, 5rem); }
+
+.wordmark {
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+  margin: 0 0 2rem;
+  text-transform: uppercase;
+}
+.wordmark a {
+  text-decoration: none;
+  display: block;
+  position: relative;
+}
+.wordmark a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -0.55rem;
+  width: 1.75rem;
+  height: 2px;
+  background: var(--accent);
+  transition: width 0.28s var(--ease);
+}
+.wordmark a:hover { color: var(--ink); }
+.wordmark a:hover::after { width: 3.25rem; }
+
+/* Nav reserves the marker column so nothing shifts on the
+   current page or on hover. */
+.rail-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-bottom: 2.25rem;
+}
+.rail-nav a {
+  position: relative;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  color: var(--ink-soft);
+  width: fit-content;
+  padding-left: 1.05rem;
+  transition: color 0.18s var(--ease);
+}
+.rail-nav a::before {
+  content: "\2192";
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+  opacity: 0;
+  transform: translateX(-0.25rem);
+  transition: opacity 0.2s var(--ease), transform 0.2s var(--ease);
+}
+.rail-nav a:hover { color: var(--accent); }
+.rail-nav a:hover::before { opacity: 0.55; transform: none; }
+.rail-nav a[aria-current="page"] { color: var(--ink); font-weight: 600; }
+.rail-nav a[aria-current="page"]::before { opacity: 1; transform: none; }
+
+/* Status reads as a plate on the instrument, not a paragraph. */
+.rail-status {
+  border-top: 1px solid var(--rule);
+  padding-top: 1.1rem;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  line-height: 1.75;
+  color: var(--ink-faint);
+  text-wrap: pretty;
+}
+.rail-status strong {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--ink-soft);
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+.rail-status strong::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+/* ---------- content ---------- */
+
+.thesis {
+  font-family: var(--mono);
+  font-size: clamp(1.6rem, 1rem + 2.4vw, 2.9rem);
+  font-weight: 500;
+  line-height: 1.14;
+  letter-spacing: -0.048em;
+  margin: 0 0 1.75rem;
+  max-width: 20ch;
+  text-wrap: balance;
+}
+
+.standfirst {
+  font-size: clamp(1rem, 0.94rem + 0.3vw, 1.15rem);
+  line-height: 1.65;
+  color: var(--ink-soft);
+  max-width: 56ch;
+  margin: 0 0 1.1rem;
+  text-wrap: pretty;
+}
+
+/* Section headers are instrument labels: wide-tracked, ruled,
+   with a short accent tick anchoring the left edge. */
+.eyebrow {
+  position: relative;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 0 0 1.5rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--rule);
+}
+.eyebrow::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 2.25rem;
+  height: 1px;
+  background: var(--accent);
+}
+
+.block {
+  margin-top: clamp(3.5rem, 7vw, 5.5rem);
+  counter-reset: entry;
+}
+
+/* ---------- project entries ----------
+   Each entry is a numbered record. The counter runs in the
+   masthead so the section reads as an indexed register. */
+
+.entry {
+  counter-increment: entry;
+  padding-bottom: 3rem;
+  margin-bottom: 3rem;
+  border-bottom: 1px solid var(--rule);
+}
+.entry:last-child { border-bottom: 0; margin-bottom: 0; padding-bottom: 0; }
+
+.entry-head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  column-gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+/* Placement is explicit: the record number and its date share the
+   masthead row, the name spans the row beneath. Left to auto-flow,
+   the full-width name would push the date to a third row. */
+.entry-head::before {
+  content: counter(entry, decimal-leading-zero);
+  grid-row: 1;
+  grid-column: 1;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+.entry-meta {
+  grid-row: 1;
+  grid-column: 2;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-faint);
+  letter-spacing: 0.02em;
+  text-align: right;
+}
+
+.entry-name {
+  grid-row: 2;
+  grid-column: 1 / -1;
+  font-family: var(--mono);
+  font-size: 1.32rem;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  margin: 0.15rem 0 0;
+}
+
+.entry-lede {
+  max-width: var(--measure);
+  margin: 0 0 1.6rem;
+  color: var(--ink-soft);
+  text-wrap: pretty;
+}
+.entry-lede strong { color: var(--ink); font-weight: 600; }
+
+/* Inline code: a tinted well, never a floating box. */
+.entry-lede code,
+.panel code,
+.article-body :not(pre) > code {
+  font-size: 0.86em;
+  background: var(--accent-wash);
+  color: var(--ink);
+  padding: 0.12em 0.36em;
+  border-radius: 2px;
+  overflow-wrap: break-word;
+}
+
+/* ---------- the signature: enforces / known gaps ----------
+   A double-entry ledger. Capability is a credit (+) in
+   ultramarine; every named limit is a debit (-) in brass.
+   Brass appears nowhere else on the site. */
+
+/* Columns stretch to a shared height so the entry ends on one line.
+   A project with five credits and two debits should still read as one
+   ruled block, the way a ledger column rule runs the full entry. */
+.ledger {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.panel {
+  padding: 1.1rem 1.25rem 1.15rem;
+  border-left: 2px solid transparent;
+}
+
+.panel-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin: 0 0 0.85rem;
+}
+.panel-label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.22;
+}
+
+.panel ul { margin: 0; padding: 0; list-style: none; }
+.panel li {
+  position: relative;
+  padding-left: 1.2rem;
+  font-size: 0.875rem;
+  line-height: 1.58;
+  margin-bottom: 0.55rem;
+  color: var(--ink-soft);
+  text-wrap: pretty;
+  overflow-wrap: break-word;
+}
+.panel li:last-child { margin-bottom: 0; }
+.panel li::before {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  line-height: 1.72;
+  font-weight: 500;
+}
+
+.panel--enforces {
+  background: var(--paper-raised);
+  border-left-color: var(--accent);
+}
+.panel--enforces .panel-label { color: var(--accent); }
+.panel--enforces li::before { content: "+"; color: var(--accent); opacity: 0.75; }
+
+.panel--gaps {
+  background: var(--brass-wash);
+  border-left-style: dashed;
+  border-left-color: var(--brass);
+}
+.panel--gaps .panel-label { color: var(--brass); }
+.panel--gaps li::before { content: "\2212"; color: var(--brass); opacity: 0.85; }
+
+.stack {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--ink-faint);
+  letter-spacing: 0.02em;
+  margin: 1.25rem 0 0;
+}
+
+/* ---------- experience ----------
+   Lighter than a project entry: no register number, no ledger.
+   Production work is evidenced by outcomes under real traffic, so
+   there is no scope panel to state. Bullets keep the ledger's
+   credit marker, since that is what they are. */
+
+.role {
+  padding-bottom: 2.25rem;
+  margin-bottom: 2.25rem;
+  border-bottom: 1px solid var(--rule);
+}
+.role:last-child { border-bottom: 0; margin-bottom: 0; padding-bottom: 0; }
+
+.role-head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  column-gap: 1rem;
+}
+
+.role-name {
+  font-family: var(--mono);
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  margin: 0;
+}
+
+.role-meta {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-faint);
+  letter-spacing: 0.02em;
+  text-align: right;
+}
+
+.role-title {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  color: var(--ink-faint);
+  margin: 0.35rem 0 1rem;
+}
+
+.role-points { margin: 0; padding: 0; list-style: none; max-width: var(--measure); }
+.role-points li {
+  position: relative;
+  padding-left: 1.2rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin-bottom: 0.55rem;
+  color: var(--ink-soft);
+  text-wrap: pretty;
+}
+.role-points li:last-child { margin-bottom: 0; }
+.role-points li::before {
+  content: "+";
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  line-height: 1.72;
+  font-weight: 500;
+  color: var(--accent);
+  opacity: 0.75;
+}
+
+/* ---------- writing index ---------- */
+
+.post-link {
+  display: block;
+  text-decoration: none;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid var(--rule);
+  transition: border-color 0.2s var(--ease);
+}
+.post-link:hover { border-bottom-color: var(--rule-strong); }
+.post-link:hover .post-title { color: var(--accent); }
+
+.post-date {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+.post-title {
+  font-family: var(--mono);
+  font-size: 1.12rem;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  margin: 0.4rem 0 0.45rem;
+  color: var(--ink);
+  transition: color 0.18s var(--ease);
+  text-wrap: balance;
+}
+.post-blurb {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  max-width: 58ch;
+  text-wrap: pretty;
+}
+
+/* ---------- long-form article ---------- */
+
+.article { max-width: var(--measure); }
+
+.article-title {
+  font-family: var(--mono);
+  font-size: clamp(1.5rem, 1rem + 1.9vw, 2.3rem);
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  line-height: 1.14;
+  margin: 0.65rem 0 1.5rem;
+  text-wrap: balance;
+}
+
+.article-body {
+  font-family: var(--serif);
+  font-size: 1.0625rem;
+  line-height: 1.74;
+}
+.article-body p { margin: 0 0 1.35rem; text-wrap: pretty; }
+
+.article-body h2 {
+  position: relative;
+  font-family: var(--mono);
+  font-size: 0.94rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  margin: 3rem 0 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--rule);
+}
+.article-body h2::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 2.25rem;
+  height: 1px;
+  background: var(--accent);
+}
+
+.article-body pre {
+  font-size: 0.8rem;
+  line-height: 1.62;
+  background: var(--paper-raised);
+  padding: 1.1rem 1.25rem;
+  overflow-x: auto;
+  border-left: 2px solid var(--rule-strong);
+  margin: 0 0 1.35rem;
+  tab-size: 2;
+}
+.article-body pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+}
+
+/* The ledger can appear inside long-form prose, where it keeps its
+   own type and rhythm rather than inheriting the serif body. */
+.article-body .ledger { font-family: var(--sans); margin: 0 0 1.5rem; }
+.article-body .panel-label { margin: 0 0 0.85rem; }
+
+.article-body blockquote {
+  margin: 0 0 1.35rem;
+  padding: 0.15rem 0 0.15rem 1.25rem;
+  border-left: 2px dashed var(--brass);
+  color: var(--ink-soft);
+  font-style: normal;
+  font-size: 0.97em;
+}
+
+.draft-flag {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  line-height: 1.65;
+  color: var(--brass);
+  background: var(--brass-wash);
+  border: 1px dashed var(--brass);
+  padding: 0.8rem 1rem;
+  margin-bottom: 2.25rem;
+  text-wrap: pretty;
+}
+
+/* Reading progress. Function, not decoration: it appears only on
+   long-form pages, and only where scroll timelines exist. */
+.progress {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  z-index: 10;
+}
+@supports (animation-timeline: scroll()) {
+  .progress {
+    animation: progress linear both;
+    animation-timeline: scroll(root block);
+  }
+}
+@keyframes progress {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+/* ---------- contact ---------- */
+
+.rows { border-top: 1px solid var(--rule); margin-top: 1.75rem; }
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 1.5rem;
+  align-items: baseline;
+  padding: 0.95rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+.row-key {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  width: 7rem;
+  flex-shrink: 0;
+}
+.row-val {
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.note {
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  max-width: 54ch;
+  margin: 2.25rem 0 0;
+  text-wrap: pretty;
+}
+
+/* ---------- motion ----------
+   Entrance on load for what is already in view; a scroll-linked
+   reveal for records further down the register. Both are
+   progressive: without support, everything is simply visible. */
+
+@media (prefers-reduced-motion: no-preference) {
+  .rail-inner, .content > * {
+    animation: rise 0.55s var(--ease) backwards;
+  }
+  .rail-inner { animation-delay: 0.02s; }
+  .content > *:nth-child(1) { animation-delay: 0.08s; }
+  .content > *:nth-child(2) { animation-delay: 0.13s; }
+  .content > *:nth-child(3) { animation-delay: 0.18s; }
+  .content > *:nth-child(n+4) { animation-delay: 0.22s; }
+
+  @supports (animation-timeline: view()) {
+    .entry {
+      animation: reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 30%;
+    }
+  }
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(0.5rem); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes reveal {
+  from { opacity: 0; transform: translateY(0.75rem); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 46rem) {
+  .shell {
+    grid-template-columns: 1fr;
+    padding-bottom: 4.5rem;
+  }
+  .rail {
+    border-right: 0;
+    border-bottom: 1px solid var(--rule);
+    padding-right: 0;
+    padding-bottom: 1.75rem;
+    margin-bottom: 2.25rem;
+  }
+  .rail-inner { position: static; }
+  .content { padding-left: 0; }
+
+  .wordmark { margin-bottom: 1.75rem; }
+  .rail-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.35rem;
+    margin-bottom: 1.75rem;
+  }
+  .rail-nav a { padding-left: 0; }
+  .rail-nav a::before { display: none; }
+  .rail-nav a[aria-current="page"] {
+    text-decoration: underline;
+    text-decoration-color: var(--accent);
+    text-underline-offset: 0.3em;
+  }
+
+  .entry { padding-bottom: 2.5rem; margin-bottom: 2.5rem; }
+}
+
+/* ---------- print ---------- */
+
+@media print {
+  :root {
+    --paper: #fff; --paper-raised: #fff; --ink: #000;
+    --ink-soft: #222; --ink-faint: #555;
+    --rule: #bbb; --rule-strong: #999;
+    --accent: #000; --brass: #000;
+    --accent-wash: transparent; --brass-wash: transparent;
+  }
+  .shell { display: block; max-width: none; padding: 0; }
+  .rail, .progress { display: none; }
+  .content { padding-left: 0; }
+  .entry, .panel { break-inside: avoid; }
+  .ledger { display: block; }
+  .panel { margin-bottom: 0.75rem; border-left: 1px solid #999; }
+  a { text-decoration: none; }
+  .article-body a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-family: var(--mono);
+    font-size: 0.8em;
+    color: #555;
+  }
+}
