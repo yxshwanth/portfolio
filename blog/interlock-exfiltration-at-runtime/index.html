@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interlock: catching MCP exfiltration at runtime, and being honest about what that means | Yashwanth Reddy Mali</title>
+<meta name="description" content="Why MCP security tools that scan tool definitions miss the exfiltration that happens after every call is already approved, and how Interlock catches it with a protocol-aware proxy and an eBPF sensor instead.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%224%22%20fill%3D%22%2314161A%22%2F%3E%3Ctext%20x%3D%2216%22%20y%3D%2224%22%20font-family%3D%22ui-monospace%2CSFMono-Regular%2CMenlo%2Cmonospace%22%20font-size%3D%2221%22%20font-weight%3D%22700%22%20fill%3D%22%239DAEFF%22%20text-anchor%3D%22middle%22%3EY%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="canonical" href="https://yashwanthreddymali.com/blog/interlock-exfiltration-at-runtime/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Yashwanth Reddy Mali">
+<meta property="og:url" content="https://yashwanthreddymali.com/blog/interlock-exfiltration-at-runtime/">
+<meta property="og:title" content="Interlock: catching MCP exfiltration at runtime, and being honest about what that means | Yashwanth Reddy Mali">
+<meta property="og:description" content="Why MCP security tools that scan tool definitions miss the exfiltration that happens after every call is already approved, and how Interlock catches it with a protocol-aware proxy and an eBPF sensor instead.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Interlock: catching MCP exfiltration at runtime, and being honest about what that means | Yashwanth Reddy Mali">
+<meta name="twitter:description" content="Why MCP security tools that scan tool definitions miss the exfiltration that happens after every call is already approved, and how Interlock catches it with a protocol-aware proxy and an eBPF sensor instead.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/site.css">
+</head>
+<body>
+<div class="progress" aria-hidden="true"></div>
+<div class="shell">
+
+  <header class="rail">
+    <div class="rail-inner">
+      <p class="wordmark"><a href="/">Yashwanth<br>Reddy Mali</a></p>
+      <nav class="rail-nav" aria-label="Primary">
+        <a href="/">Work</a>
+        <a href="/blog/" aria-current="page">Blog</a>
+        <a href="/contact/">Contact</a>
+        <a href="/resume.pdf">R&eacute;sum&eacute;</a>
+        <a href="https://github.com/yxshwanth">GitHub</a>
+        <a href="https://linkedin.com/in/yashwanth-mali">LinkedIn</a>
+      </nav>
+      <div class="rail-status">
+        <strong>Open to work</strong>
+        Backend engineer.<br>Platform, authorization,<br>and systems work.<br>
+        Bay Area or remote.
+      </div>
+    </div>
+  </header>
+
+  <main class="content">
+    <article class="article">
+      <span class="post-date">25 July 2026</span>
+      <h1 class="article-title">Interlock: catching MCP exfiltration at runtime, and being honest about what that means</h1>
+
+      <div class="article-body">
+        <p>
+          Every MCP security tool I could find scans tool <em>definitions</em> before an agent is
+          allowed to use them. None of them can see the attack that actually matters in production:
+          a sequence of individually-authorized tool calls that chains into an exfiltration
+          pipeline.
+        </p>
+
+        <p>Read a ticket. Follow the instruction hidden in the ticket body. Send a message.</p>
+
+        <p>Three approved calls. One breach. No individual call is anomalous.</p>
+
+        <p>
+          Simon Willison named the shape. The <strong>lethal trifecta</strong>: access to private
+          data, exposure to untrusted content, and the ability to communicate externally. Any one
+          leg is safe. All three live in one session is how data walks out. The mid-2025
+          Supabase/Cursor breach was exactly this: privileged data access, attacker-supplied input,
+          an external channel.
+        </p>
+
+        <p>
+          Static scanners run before the session. The trifecta assembles during it. That gap is
+          where Interlock lives.
+        </p>
+
+        <h2>Won't better models just stop falling for this?</h2>
+
+        <p>Sometimes. Probably. For a while.</p>
+
+        <p>
+          That is the bet I did not want to build on. NIST's adversarial ML taxonomy (AI
+          100-2e2025) is blunt about the state of it: current mitigations cannot fully prevent
+          these attacks, and there is no foolproof defense available today. Model-level injection
+          resistance is a probability, and it decays the second someone finds a phrasing the
+          training didn't cover.
+        </p>
+
+        <p>
+          So I assumed the injection already won, and built for the step after it: catching the
+          secret on its way out.
+        </p>
+
+        <p>
+          That is the real argument for stacking, and it isn't just "defense in depth" as a
+          slogan. <strong>The two defenses fail independently.</strong> Injection resistance is a
+          property of training data. Exfil detection is a property of a byte comparison inside a
+          proxy. A phrasing clever enough to defeat the first has no purchase on the second,
+          because the second never reads the prompt. It reads the outbound arguments.
+        </p>
+
+        <p>
+          Which is why Interlock is model-agnostic on purpose. It sits between the agent and its
+          MCP servers, so it does not care whether that is Claude, GPT, or something someone wired
+          up locally at 2am. It watches what the agent does, not how the agent thinks. The model
+          can be as smart as it wants. Interlock is downstream of the reasoning.
+        </p>
+
+        <h2>Approach</h2>
+
+        <p>Two observation planes, one correlation engine.</p>
+
+        <figure class="flow">
+          <div class="flow-grid">
+            <div class="flow-node" style="grid-column:1;grid-row:1">Agent</div>
+            <div class="flow-hbridge" style="grid-column:2;grid-row:1"></div>
+            <div class="flow-node flow-node--core" style="grid-column:3;grid-row:1">MCP Proxy</div>
+            <div class="flow-hbridge" style="grid-column:4;grid-row:1"></div>
+            <div class="flow-node flow-node--untrusted" style="grid-column:5;grid-row:1">MCP servers<small>untrusted</small></div>
+
+            <div class="flow-connector" style="grid-column:3;grid-row:2 / 4;align-self:stretch;height:auto">
+              <span class="flow-line"></span>
+              <span class="flow-connector-label">InterceptedEvent</span>
+              <span class="flow-line flow-line--arrow-down"></span>
+            </div>
+            <div class="flow-connector flow-connector--dashed" style="grid-column:5;grid-row:2">
+              <span class="flow-line flow-line--dashed"></span>
+              <span class="flow-connector-label">TCP, bypasses proxy</span>
+              <span class="flow-line flow-line--dashed flow-line--arrow-down"></span>
+            </div>
+
+            <div class="flow-node flow-node--untrusted" style="grid-column:5;grid-row:3">Attacker</div>
+
+            <div class="flow-node flow-node--core flow-node--engine" style="grid-column:2 / span 4;grid-row:4">
+              <span class="flow-node-title">Correlation Engine</span>
+              <ul>
+                <li>&#8594; Decision, enforced back at the proxy</li>
+                <li>&#8594; Evidence, written to the sink</li>
+              </ul>
+            </div>
+
+            <div class="flow-connector" style="grid-column:3;grid-row:5">
+              <span class="flow-line flow-line--arrow-up"></span>
+              <span class="flow-connector-label">SyscallEvent</span>
+              <span class="flow-line"></span>
+            </div>
+
+            <div class="flow-node flow-node--core" style="grid-column:3;grid-row:6">eBPF Sensor</div>
+          </div>
+          <div class="flow-key">
+            <span><i></i> Interlock's own path</span>
+            <span><i class="flow-key--dashed"></i> untrusted / adversarial</span>
+          </div>
+        </figure>
+
+        <p>
+          <strong>Plane 1: a protocol-aware MCP proxy (Go).</strong> Not a byte pipe. It terminates
+          <code>initialize</code>, <code>tools/list</code>, and <code>ping</code> itself, spawns
+          every configured server as a child, and builds a tool-name to server routing table. The
+          agent sees one endpoint.
+        </p>
+
+        <p>
+          <strong>Plane 2: an eBPF sensor.</strong> Tracepoints on <code>connect</code>,
+          <code>write</code>, <code>sendto</code>, <code>openat</code>, scoped to the proxy's PID
+          subtree via a BPF hash map. This exists because a poisoned server does not have to use
+          the MCP channel to exfiltrate. It can just open a socket. The proxy is blind to that. The
+          kernel is not.
+        </p>
+
+        <p>
+          <strong>The engine</strong> owns one state machine per session. Three legs, lit by events
+          from either plane, correlated by PID and a monotonic timestamp.
+        </p>
+
+        <p>
+          The design decision everything else hangs on: <strong>verdict and action are separate
+          dimensions.</strong>
+        </p>
+
+        <p>
+          Verdict is what was concluded. Action is what was done about it. They are not the same
+          axis, and collapsing them is how security tools get uninstalled.
+        </p>
+
+        <table>
+          <thead>
+            <tr><th>Verdict</th><th>Means</th><th>Hard enforcement</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>EXFIL</code> (0.95)</td>
+              <td>A registered tainted value appears in the sink args or egress payload</td>
+              <td>Yes, blocked or contained</td>
+            </tr>
+            <tr>
+              <td><code>SUSPICIOUS</code> (0.60)</td>
+              <td>All three legs lit, and the sink shares a long byte substring with untrusted content</td>
+              <td>No, evidence only</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>
+          <code>EXFIL</code> is the bar for <em>we proved a secret moved</em>.
+          <code>SUSPICIOUS</code> is <em>this session has the shape of risk</em>. Only the first one
+          is allowed to break anything.
+        </p>
+
+        <h2>Implementation</h2>
+
+        <p>
+          <strong>Hold-before-forward.</strong> Enforcement hooks at the exact point where the
+          proxy has parsed a <code>tools/call</code>, extracted the tool name and args, and
+          resolved the target server. The engine evaluates there. On block, the frame is never
+          written to the child's stdin. The proxy synthesizes a JSON-RPC error using the same
+          response-synthesis path it already uses for <code>tools/list</code>. The agent gets a
+          legible failure instead of a hang.
+        </p>
+
+        <p>
+          <strong>Proof is byte overlap, not model judgment.</strong> When a tool tagged
+          <code>sensitive_source</code> returns data, the engine extracts candidate secrets and
+          precomputes canonical encodings: literal, base64, hex, URL-encoding, reversal, closed
+          depth-2 nests, <code>gzip_base64</code>. At sink time it scans the args for any of them.
+          On a miss it tries same-call JSON string reassembly, then a bounded recursive decoder
+          (base64/hex, depth 3 or less). A session-level fragment buffer closes cross-call splits,
+          where the secret arrives in abutting halves across two paginated results.
+        </p>
+
+        <p>
+          Tainted values are stored hashed and masked, never raw: <code>sk-...a9f2</code>.
+          Comparison happens against raw values in memory only. Every output file is scrubbed
+          before writing. A tool that logs the token it is protecting is itself the exfil path.
+        </p>
+
+        <p>
+          <strong>Kernel side is detect-and-contain, not prevent.</strong> The sensor observes. It
+          does not block in-kernel. Containment is userspace kill-on-detect, with a ~100 ms
+          deferred window after a suspicious <code>connect</code> so a correlated
+          <code>write</code> can land and prove payload overlap.
+        </p>
+
+        <p>
+          That trade-off, stated plainly: <strong>for the eBPF variant, the first packet may
+          already be gone when the kill fires.</strong> Interlock severs the channel and kills the
+          process before further exfiltration. It does not prevent the first byte. The proxy
+          variant is true prevention. The kernel variant is containment. Calling both "blocking"
+          would be a lie that shows up in someone's incident review six months later. LSM/KRSI
+          in-kernel blocking is the fix, and it is not shipped.
+        </p>
+
+        <h2>Results</h2>
+
+        <p>
+          A 55-scenario corpus (25 malicious, 30 benign) drives the engine directly. No proxy, no
+          kernel, no network, so it runs in CI without root or BTF.
+        </p>
+
+        <table>
+          <thead>
+            <tr><th>Metric</th><th>Value</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Detection rate (EXFIL-tier, non-gap malicious)</td><td>100.0% (21/21)</td></tr>
+            <tr><td>False positives, any trip, benign</td><td>13.3% (4/30)</td></tr>
+            <tr><td>False positives, EXFIL-tier, benign</td><td><strong>0.0% (0/30)</strong></td></tr>
+            <tr><td>Known-gap misses (catalogued, pinned by tests)</td><td>4</td></tr>
+          </tbody>
+        </table>
+
+        <p>
+          The 13.3% deserves the scrutiny it is going to get. Those four are all soft
+          <code>SUSPICIOUS</code> with action <code>allowed_monitor</code>. A fetch-heavy agent
+          quotes a long product blurb outbound, the blurb byte-binds to the sink, the tripwire logs
+          it. Nothing is blocked. That is the system working as designed at the current bind
+          threshold, and the tuning knob is <code>content_bind_min_len</code>, not widening
+          enforcement to cover it.
+        </p>
+
+        <p>
+          At the tier that actually breaks your agent, the false-positive rate is zero, including
+          on scenarios built to look encoding-adjacent: base64 of unrelated data, masked previews,
+          ticket-ID references.
+        </p>
+
+        <p>
+          <strong>What this deliberately does not measure: injection success rate.</strong> There
+          is no attack-success benchmark here, because if I benchmarked whether the agent falls for
+          the poisoned ticket, I would be grading the model, not the tool. Out-arguing a prompt
+          injection is the model's fight. The question a firewall has to answer is narrower and
+          entirely mine: when the secret tries to leave, does it get caught.
+        </p>
+
+        <p>
+          <strong>Overhead</strong>, measured as engine delta (same HTTP stack, engine on versus
+          passthrough):
+        </p>
+
+        <div class="ledger">
+          <div class="panel panel--enforces">
+            <p class="panel-label">Overhead</p>
+            <ul>
+              <li>~536 &micro;s on sensitive reads</li>
+              <li>~118 &micro;s on sink checks</li>
+            </ul>
+          </div>
+        </div>
+
+        <p>
+          Which is backwards from what I expected, and the reason is the interesting part. The sink
+          path runs the full trifecta and the overlap scan, and it is cheap. An early match is ~79
+          ns regardless of taint-map size. The read path runs taint extraction and precomputes
+          five-plus canonical encodings per secret, and that dominates. <strong>Per-call cost lives
+          on reads, not writes.</strong> Agents read constantly. The common path is the expensive
+          one.
+        </p>
+
+        <p>
+          That number is for a fixture with 2 secrets, and it scales linearly with
+          secrets-per-result. "~0.5 ms" means "~0.5 ms for a 2-secret read," not a ceiling.
+        </p>
+
+        <h2>What it does not catch</h2>
+
+        <p>The elephant, stated first because you would find it anyway:</p>
+
+        <p>
+          <strong>Semantic exfil.</strong> The agent reads a secret and then writes prose that
+          conveys it without any registered byte form.
+        </p>
+
+        <blockquote>
+          "The live Stripe key from that ticket starts with sk-live-51Tx and ends in abcdef&hellip;"
+        </blockquote>
+
+        <p>
+          Not detected at EXFIL tier. Pinned as a known-gap scenario with a passing benign twin, so
+          it stays visible instead of quietly rotting.
+        </p>
+
+        <p>
+          The reason is a product decision, not an oversight. Interlock's proof is overlap against
+          precomputed encodings. Semantic detection means putting another model on the hot path:
+          trusting a judge that can be talked out of its judgment, exploding the false-positive
+          surface, and still losing to a clever rewrite. I would rather be excellent and honest at
+          programmatic exfil and name the gap than ship something that "understands" outbound
+          prose and gets rolled back.
+        </p>
+
+        <div class="ledger">
+          <div class="panel panel--gaps">
+            <p class="panel-label">Also catalogued</p>
+            <ul>
+              <li>Depth-4+ encoding nests and compressors other than gzip</li>
+              <li>Secrets past the eBPF capture window, IPv6, and <code>sendmsg</code>/<code>writev</code> are untraced</li>
+              <li>Operator trap: <code>EvaluateRequest</code> only gates tools tagged <code>external_sink</code>. An untagged write-shaped tool sitting on a <code>sensitive_source</code> server is invisible to the engine, so every tool that can egress needs the tag, regardless of which server hosts it</li>
+              <li>Default posture is fail-open with loud <code>[SECURITY]</code> warnings on stderr; a production <code>fail_closed</code> mode is on the roadmap, not in the build</li>
+            </ul>
+          </div>
+        </div>
+
+        <h2>What I'd do differently</h2>
+
+        <p>
+          <strong>Build the false-positive corpus before the state machine.</strong> I built the
+          trifecta logic first and the corpus second, and the corpus immediately rewrote the logic.
+          The original version lit <code>untrusted_content_present</code> on sensitive-source
+          results, which meant one sensitive read made every subsequent sink call suspicious
+          forever. Sticky legs. On paper it was thorough. In practice it was a tool nobody would
+          keep installed past week two. The fix was obvious the moment I had benign scenarios to
+          run it against, and invisible before that: untrusted no longer lights on sensitive
+          results, <code>SUSPICIOUS</code> additionally requires byte-level content-bind, and hard
+          enforcement is reserved for <code>EXFIL</code>.
+        </p>
+
+        <p>
+          <strong>Make verdict and action separate types on day one.</strong> I added the
+          <code>Action</code> dimension late, retrofitting it through the evidence model. It should
+          have been in the first version of the data model. The moment you have two enforcement
+          planes with genuinely different capabilities, one that prevents and one that can only
+          contain, a single "blocked" boolean is already lying to you.
+        </p>
+
+        <p>
+          <strong>Measure before optimizing the obvious thing.</strong> I spent time on the overlap
+          scan because it was the part that felt expensive. It wasn't. Taint ingestion on reads is
+          roughly 5x the cost, and I only learned that from the benchmark.
+        </p>
+
+        <p>
+          Interlock is Go plus eBPF via <code>cilium/ebpf</code>, runs against MCP over STDIO or
+          Streamable HTTP, and ships a sensor-only Kubernetes DaemonSet with PID to pod
+          attribution. Every trip writes an evidence record, rendered by a read-only local HTML
+          viewer: the injected instruction, the sensitive read, the attempted send, down to the
+          syscall.
+        </p>
+
+        <p>Scanners check what tools claim. Interlock watches what agents do.</p>
+
+        <p>
+          If you've got a scenario you think breaks the trifecta:
+          <a href="mailto:me@yashwanthreddymali.com">me@yashwanthreddymali.com</a>.
+        </p>
+      </div>
+    </article>
+  </main>
+</div>
+</body>
+</html>
