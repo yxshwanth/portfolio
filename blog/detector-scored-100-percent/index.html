@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My detector scored 100% on tests I wrote myself | Yashwanth Reddy Mali</title>
+<meta name="description" content="I wrote Interlock's 58-scenario corpus and it reported 100% detection. Grading it against seven independently-disclosed MCP CVEs instead found two live bugs, one permanently dead subsystem, and one instance of me quietly fitting a test to my own patch.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%224%22%20fill%3D%22%2314161A%22%2F%3E%3Ctext%20x%3D%2216%22%20y%3D%2224%22%20font-family%3D%22ui-monospace%2CSFMono-Regular%2CMenlo%2Cmonospace%22%20font-size%3D%2221%22%20font-weight%3D%22700%22%20fill%3D%22%239DAEFF%22%20text-anchor%3D%22middle%22%3EY%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="canonical" href="https://yashwanthreddymali.com/blog/detector-scored-100-percent/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Yashwanth Reddy Mali">
+<meta property="og:url" content="https://yashwanthreddymali.com/blog/detector-scored-100-percent/">
+<meta property="og:title" content="My detector scored 100% on tests I wrote myself | Yashwanth Reddy Mali">
+<meta property="og:description" content="I wrote Interlock's 58-scenario corpus and it reported 100% detection. Grading it against seven independently-disclosed MCP CVEs instead found two live bugs, one permanently dead subsystem, and one instance of me quietly fitting a test to my own patch.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="My detector scored 100% on tests I wrote myself | Yashwanth Reddy Mali">
+<meta name="twitter:description" content="I wrote Interlock's 58-scenario corpus and it reported 100% detection. Grading it against seven independently-disclosed MCP CVEs instead found two live bugs, one permanently dead subsystem, and one instance of me quietly fitting a test to my own patch.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/site.css">
+</head>
+<body>
+<div class="progress" aria-hidden="true"></div>
+<div class="shell">
+
+  <header class="rail">
+    <div class="rail-inner">
+      <p class="wordmark"><a href="/">Yashwanth<br>Reddy Mali</a></p>
+      <nav class="rail-nav" aria-label="Primary">
+        <a href="/">Work</a>
+        <a href="/blog/" aria-current="page">Blog</a>
+        <a href="/contact/">Contact</a>
+        <a href="/resume.pdf">R&eacute;sum&eacute;</a>
+        <a href="https://github.com/yxshwanth">GitHub</a>
+        <a href="https://linkedin.com/in/yashwanth-mali">LinkedIn</a>
+      </nav>
+      <div class="rail-status">
+        <strong>Open to work</strong>
+        Backend engineer.<br>Platform, authorization,<br>and systems work.<br>
+        Bay Area or remote.
+      </div>
+    </div>
+  </header>
+
+  <main class="content">
+    <article class="article">
+      <span class="post-date">28 July 2026</span>
+      <h1 class="article-title">My detector scored 100% on tests I wrote myself</h1>
+
+      <div class="article-body">
+        <p>
+          Interlock's corpus reports 100% detection: 21 of 21 non-gap malicious scenarios reach
+          <code>EXFIL</code>, its highest-confidence verdict. I wrote the detector. I also wrote
+          the 58 scenarios grading it.
+        </p>
+
+        <p>
+          That number measures one thing, whether I remembered to test the cases I was already
+          thinking about. So I built a second corpus from seven independently-disclosed MCP CVEs
+          and ran it against the same engine. It found two live bugs in Interlock, a subsystem
+          I'd documented three times that could never execute, and one instance of me quietly
+          fitting a test to my own patch.
+        </p>
+
+        <h2>What the tool claims</h2>
+
+        <p>
+          Interlock is a runtime firewall for MCP-connected agents, watching two planes: a Go MCP
+          proxy in the request path, and an eBPF sensor tracing <code>connect</code>,
+          <code>write</code>, <code>writev</code>, <code>sendto</code> and <code>sendmsg</code>
+          underneath. It trips when a session takes the shape of Simon Willison's lethal trifecta:
+          private data, untrusted content, an external channel.
+        </p>
+
+        <p>
+          Two verdicts, deliberately separated. <code>EXFIL</code> (0.95) means a registered
+          secret's exact bytes, or one of its precomputed canonical encodings, appeared in a sink
+          call's args or a captured syscall payload. <code>SUSPICIOUS</code> (0.60) means the
+          session has the shape and nothing was proven. Only <code>EXFIL</code> hard-blocks or
+          kills.
+        </p>
+
+        <p>
+          "We proved a secret moved" is narrow and defensible. "We detect exfiltration" is not a
+          claim I can support. The gap between them is the product.
+        </p>
+
+        <h2>Reconstruction, not exploitation</h2>
+
+        <p>
+          Seven CVE families, cited to their real writeups: Anthropic's mcp-server-git, Framelink
+          Figma MCP, GPT Researcher, Fetch MCP, Apache Doris MCP, excel-mcp-server, Anthropic's
+          Filesystem MCP. Each got two variants. One shaped like the exfiltration the CVE enables,
+          one shaped like an escape from my detection.
+        </p>
+
+        <p>
+          These reproduce data-flow shape, not working exploits. Interlock's threat model starts
+          after an MCP session is running, so each scenario reconstructs what untrusted input
+          arrived, what got read, and what left. Not the parser bug or injection primitive
+          underneath. Same abstraction level as my self-authored corpus. The only thing that
+          changed is who chose the attacks.
+        </p>
+
+        <h2>Finding one: a tripwire I had silently deleted</h2>
+
+        <p>
+          Three of my docs asserted that a bare <code>connect()</code> to a non-allowlisted
+          destination reaches <code>SUSPICIOUS</code> when the other legs are lit. That's the
+          canonical reverse-shell shape, the case the kernel plane exists for. The Figma
+          reconstruction found the claim false.
+        </p>
+
+        <p>
+          An earlier fix had introduced content-binding: require a shared byte-level substring
+          between untrusted content and the sink payload before firing <code>SUSPICIOUS</code>.
+          Reasonable, and it cut a 46.7% operational false-positive rate hard. But
+          <code>CheckContentBind</code> rejected an empty sink string before running any
+          comparison, and a bare <code>connect()</code> structurally carries no payload field.
+        </p>
+
+        <p>
+          The check never failed on the merits. It failed the length test every time, regardless
+          of session state. Not a sensitivity downgrade. A silent deletion of the tripwire,
+          shipped as a side effect of a fix for something else, and documented as working in three
+          places for a full release.
+        </p>
+
+        <pre><code>// classifyTrip now distinguishes:
+//   no payload channel at all (connect)   -&gt; AllLit alone suffices
+//   payload channel, merely unrelated     -&gt; content-bind still required</code></pre>
+
+        <p>
+          Pinned by <code>TestEngine_IngestSyscall_ConnectOnly_AllLit_Suspicious</code>.
+        </p>
+
+        <h2>Finding two: the structural one underneath it</h2>
+
+        <p>Tracing that bug surfaced a worse one.</p>
+
+        <p>
+          Interlock ships a sensor-only Kubernetes DaemonSet: eBPF, no proxy, because integrators
+          want kernel visibility without handing over their request path. In that mode nothing
+          ever lights <code>untrusted_content_present</code>. A proxy-less pod has no MCP
+          untrusted-content plane to observe.
+        </p>
+
+        <p>
+          So <code>AllLit()</code> is permanently false there, and the entire soft-
+          <code>SUSPICIOUS</code> tier was inert on that deploy path. Every syscall type, not just
+          <code>connect()</code>. Fixing finding one changed nothing for it.
+        </p>
+
+        <p>
+          Git history says this was never implemented rather than broken later. The code and the
+          doc describing it had been mismatched since sensor-only mode shipped. I wrote the doc
+          from intent and never checked the intent survived contact with the code.
+        </p>
+
+        <p>
+          Remediation is opt-in: an unprivileged proxy sidecar forwards an "untrusted content
+          observed" boolean over the existing taint bridge. A genuinely proxy-less deployment
+          still cannot reach <code>SUSPICIOUS</code> at all, by construction. Operators there get
+          <code>EXFIL</code>-tier detection and no soft tripwire. Absence of a trip means nothing
+          was proven, not that nothing happened. That distinction is now in the docs.
+        </p>
+
+        <h2>Finding three: dead code describing a feature</h2>
+
+        <p>
+          Interlock used to defer containment ~100ms after a trip so a payload receipt could land
+          before <code>SIGKILL</code>. Proof over speed. I liked the design enough to write about
+          it three times.
+        </p>
+
+        <p>
+          It could never fire. The deferral armed only on a containment action; containment had
+          been reserved for <code>EXFIL</code> alone since an earlier revision; a bare
+          <code>connect()</code> carries no payload and cannot itself prove <code>EXFIL</code>.
+          Unreachable in every combination.
+        </p>
+
+        <p>
+          Deleted rather than documented around. Removing it changed no observable timing.
+          <code>EXFIL</code> containment was always immediate and never routed through it. Three
+          documents had been describing a mechanism that didn't run.
+        </p>
+
+        <h2>The correction I published about myself</h2>
+
+        <p>
+          After fixing finding one, I rebuilt the Figma reconstruction as a proxy-tied session so
+          the fix would visibly flip its outcome from "no verdict" to <code>SUSPICIOUS</code>.
+          Cleaner story: here's the patch, here's the real CVE scenario proving it.
+        </p>
+
+        <p>
+          CVE-2025-53967 is server-side command injection. It has no natural proxy-visible
+          untrusted-content step. The faithful reconstruction is sensor-only, which is exactly why
+          it still misses. I had reshaped a scenario until it agreed with my patch, and the
+          reshaping was invisible unless you knew the CVE well enough to notice the session shape
+          was wrong.
+        </p>
+
+        <p>
+          Rebuilding it as proxy-tied to make the fix demonstrable, rather than reporting the
+          faithful reconstruction's real outcome, would have quietly inflated this report's
+          credibility on the strength of a scenario built to succeed.
+        </p>
+
+        <p>
+          Reverted to sensor-only, where it remains a full miss. The fix demonstration survives as
+          a separately-labelled scenario stating plainly that it is not a CVE reconstruction. That
+          grows the denominator honestly instead of hiding inside one.
+        </p>
+
+        <p>
+          Benchmark-fitting does not feel like cheating while you do it. It feels like building a
+          clearer demonstration.
+        </p>
+
+        <h2>The fix made my numbers worse</h2>
+
+        <p>
+          Restoring the tripwire restored its false-positive surface. My benign scenarios had
+          never exercised it. One had no session attribution, the other never touched a sensitive
+          tool. Untested by construction, not proven clean.
+        </p>
+
+        <p>
+          I wrote scenarios to exercise it directly: a legitimate session making an ordinary
+          non-allowlisted egress call to a CDN or telemetry endpoint nobody remembered to
+          allowlist. Published any-trip false-positive rate moved from 13.3% to 18.8%, then to
+          21.2% when a second shape turned up.
+        </p>
+
+        <p>
+          That second shape is my favourite result here. <code>-----BEGIN PRIVATE KEY-----</code>
+          is 27 bytes. My content-bind minimum is 16. The header is byte-identical in every PEM
+          key ever written. Any fetch-heavy agent that merely discusses key formats (security
+          docs, compliance runbooks) trips the soft tripwire on a universal constant, with no key,
+          no quoting relationship, nothing secret anywhere in the session. I found it because an
+          unrelated scenario draft collided with it by accident.
+        </p>
+
+        <p>
+          <code>EXFIL</code>-tier false positives have stayed at 0.0% throughout, which is the
+          number that governs whether anything gets killed. The soft-tier number moved the wrong
+          way because of a fix I chose to make. Rounding it away would have made every other
+          number on the page worth less.
+        </p>
+
+        <p>
+          One thing that rate still hides: it scores per scenario, not per alert. No "already
+          tripped, stop evaluating" gate exists in the engine, so one benign session making five
+          unlisted connects produces five evidence records and five OCSF findings, deduplicating
+          to a single PagerDuty incident. Three numbers for one incident, depending which sink you
+          ask.
+        </p>
+
+        <h2>Where the escape variants land</h2>
+
+        <p>
+          Seven escape-shaped variants. Six produce no verdict at all, one soft-catches, zero
+          reach <code>EXFIL</code>.
+        </p>
+
+        <p>
+          Three landed on gaps I'd already catalogued: a five-layer encoding nest past my depth-3
+          decoder, a ZIP-compressed <code>.xlsx</code> when only gzip is a precomputed form. Those
+          were entailed the moment I chose the scenario shape. They confirm the gap catalogue
+          predicts real disclosed shapes; they reveal nothing new.
+        </p>
+
+        <p>
+          The other four probed open ground, and their reasons differ, which is the useful part. A
+          <code>git push</code> moves the credential as packfile bytes over git's own wire
+          protocol, never inside anything overlap matching inspects. Blind SQL injection
+          reconstructs the secret externally from a sequence of booleans, so its bytes are never
+          observed anywhere I look; no taint registers and no downstream logic runs. DNS-fragmented
+          exfiltration splits the value across queries each shorter than the registered secret, so
+          the shell's initial <code>connect()</code> soft-trips but the proof step never lands.
+          Anomaly flag, no evidence. And the Figma reverse shell misses for the structural
+          sensor-only reason above.
+        </p>
+
+        <p>
+          Protocol-native transport, an unregistered container format, an exhausted decode budget,
+          a value never observed at all, a deployment-mode structural gap. That range is the real
+          shape of the ceiling, not one excuse wearing four hats.
+        </p>
+
+        <p>
+          One reconstruction closed a gap. A PEM private key's base64 body has no token-shaped
+          marker, so my extractor registered zero taint from reading it. The most literal
+          exfiltration possible, defeated at step one, before any encoding logic ran. A BEGIN/END
+          anchor pattern fixed it. Still open: X.509 certs, database connection strings, and
+          PKCS#12 containers, invisible for the same reason. PKCS#12 cannot be closed with a
+          content regex at all, being binary DER with no textual anchor. Catching it needs taint
+          driven by the file path observed at read time, a mechanism I haven't built.
+        </p>
+
+        <h2>What none of this proves</h2>
+
+        <p>
+          The denominator is still mine. I chose the seven families and which second variant each
+          got. An eighth moves every fraction here. Endor Labs and CSA have catalogued more usable
+          shapes than I reconstructed, so this should keep growing rather than be treated as
+          settled.
+        </p>
+
+        <p>
+          Every catch catches the symptom. Interlock has zero visibility into the path traversal,
+          the argument injection, the SSRF bypass, the symlink escape. It sees the data movement
+          those bugs enable, and only when that movement takes a shape where the bytes are visible
+          in something it inspects. Roughly half the CVE IDs I surveyed never became scenarios at
+          all. They exploit spawn-time configuration, transport negotiation, registry trust.
+          Layers a post-session behavioural monitor cannot observe. Not a roadmap item; a
+          different product's job.
+        </p>
+
+        <p>
+          The transferable part: a test suite written by the author of the code under test
+          measures recall of your own assumptions. Mine reported 100% while a documented feature
+          had been dead for a release, a whole verdict tier was inert on one deploy path, and a
+          subsystem I'd written about three times could never execute. None of it was visible from
+          inside my own imagination. It took seven strangers' bug reports.
+        </p>
+
+        <p>
+          Code, the CVE corpus report, the false-positive corpus, and the detection boundary doc
+          are on <a href="https://github.com/yxshwanth">GitHub</a>. If you work on runtime
+          enforcement and think any of these boundaries are drawn wrong, I want to hear it:
+          <a href="mailto:me@yashwanthreddymali.com">me@yashwanthreddymali.com</a>.
+        </p>
+      </div>
+    </article>
+  </main>
+</div>
+</body>
+</html>
