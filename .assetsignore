@@ -1,0 +1,8 @@
+# Repo files that live in the assets directory but should not be served.
+worker.js
+schema.sql
+wrangler.jsonc
+README.md
+CLAUDE.md
+tools/
+.assetsignore

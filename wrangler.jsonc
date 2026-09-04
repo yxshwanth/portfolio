@@ -1,14 +1,23 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "portfolio",
-  "compatibility_date": "2026-07-26",
-  "observability": {
-    "enabled": true
-  },
-  "assets": {
-    "directory": "."
-  },
-  "compatibility_flags": [
-    "nodejs_compat"
-  ]
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "portfolio",
+	"compatibility_date": "2026-07-26",
+	"main": "worker.js",
+	"observability": {
+		"enabled": true
+	},
+	"assets": {
+		"directory": ".",
+		"binding": "ASSETS"
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "portfolio-reads",
+			"database_id": "d41c5aac-9ca4-4b94-850c-905985dc7125"
+		}
+	],
+	"compatibility_flags": [
+		"nodejs_compat"
+	]
 }
