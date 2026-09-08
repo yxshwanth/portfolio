@@ -4,21 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Yashwanth Reddy Mali | backend engineer</title>
-<meta name="description" content="Backend engineer. Production systems in Go, Python and TypeScript; projects in runtime enforcement, authorization, and query engines.">
+<meta name="description" content="Backend engineer. Production APIs, auth and CI/CD in Node.js and C#/.NET; distributed systems in Go. Found and fixed a fail-open authorization bug in OpenFGA.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%224%22%20fill%3D%22%2314161A%22%2F%3E%3Ctext%20x%3D%2216%22%20y%3D%2224%22%20font-family%3D%22ui-monospace%2CSFMono-Regular%2CMenlo%2Cmonospace%22%20font-size%3D%2221%22%20font-weight%3D%22700%22%20fill%3D%22%239DAEFF%22%20text-anchor%3D%22middle%22%3EY%3C%2Ftext%3E%3C%2Fsvg%3E">
 <link rel="canonical" href="https://yashwanthreddymali.com/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Yashwanth Reddy Mali">
 <meta property="og:url" content="https://yashwanthreddymali.com/">
 <meta property="og:title" content="Yashwanth Reddy Mali">
-<meta property="og:description" content="Backend engineer. Production systems in Go, Python and TypeScript; projects in runtime enforcement, authorization, and query engines.">
+<meta property="og:description" content="Backend engineer. Production APIs, auth and CI/CD in Node.js and C#/.NET; distributed systems in Go. Found and fixed a fail-open authorization bug in OpenFGA.">
 <meta property="og:image" content="https://yashwanthreddymali.com/assets/og/home.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Yashwanth Reddy Mali — yashwanthreddymali.com">
+<meta property="og:image:alt" content="I build systems that enforce limits, and I publish the limits — yashwanthreddymali.com">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Yashwanth Reddy Mali">
-<meta name="twitter:description" content="Backend engineer. Production systems in Go, Python and TypeScript; projects in runtime enforcement, authorization, and query engines.">
+<meta name="twitter:description" content="Backend engineer. Production APIs, auth and CI/CD in Node.js and C#/.NET; distributed systems in Go. Found and fixed a fail-open authorization bug in OpenFGA.">
 <meta name="twitter:image" content="https://yashwanthreddymali.com/assets/og/home.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -52,16 +52,16 @@
     <h1 class="thesis">I build systems that enforce limits, and I publish the limits.</h1>
 
     <p class="standfirst">
-      Backend engineer, two years shipping production systems in Go, Python, Java and TypeScript.
-      Most recently the backend of an AI data-discovery platform: an MCP server over JSON-RPC, an
-      Auth0/JWT gateway, and API P95 cut from 1.2s to 480ms. Merged fixes in Auth0 OpenFGA and
-      Google Malloy. M.S. Computer Science from CU Boulder.
+      Backend engineer, two years shipping production REST APIs, authentication and CI/CD across
+      Node.js and C#/.NET, and building distributed systems in Go. I found and privately disclosed
+      a fail-open authorization vulnerability in OpenFGA, the CNCF-incubating engine behind Grafana
+      and Docker, and wrote the fix that shipped in v1.19.0. M.S. Computer Science from CU Boulder.
     </p>
 
     <p class="standfirst">
       The projects below are my own, and they go further into runtime enforcement and authorization
       than my production work has: eBPF syscall tracing, AI-agent containment, Zanzibar-style
-      relation graphs. A security tool that implies coverage it doesn't have is worse than no tool,
+      relation graphs over a Raft implementation written from the paper. A security tool that implies coverage it doesn't have is worse than no tool,
       because someone will trust it, so each one says where it stops.
     </p>
 
@@ -75,7 +75,7 @@
         </div>
         <p class="entry-lede">
           A runtime firewall that stops AI agents from exfiltrating secrets. A Go MCP proxy tracks
-          sensitive values through base64, hex, URL and gzip encodings and refuses to forward
+          sensitive values through 13 registered encodings and refuses to forward
           exfiltrating tool calls; eBPF traces <code>connect()</code> and <code>write()</code> underneath
           to catch the side channels the proxy cannot see. Containment
           <strong>defers roughly 100ms</strong> after a trip: a deliberate tradeoff, proof over speed,
@@ -85,17 +85,18 @@
           <div class="panel panel--enforces">
             <p class="panel-label">Enforces</p>
             <ul>
-              <li>Encoding-aware value tracking across base64, hex, URL-encoding, reversal and gzip, including depth-2 nests and secrets split across calls via a session fragment buffer</li>
+              <li>Encoding-aware value tracking across 13 registered forms — base64, hex, URL-encoding, reversal, and gzip, brotli, zstd and lz4 — including depth-5 nests and secrets split across calls via a session fragment buffer</li>
               <li>Syscall-level egress detection via cilium-ebpf, correlating <code>connect()</code>, <code>sendto()</code> and <code>write()</code> by PID, with a tunable payload capture window (<code>payload_capture_bytes</code>, default 512)</li>
               <li>Sensor-only Kubernetes DaemonSet with PID-to-pod attribution, validated on EKS (AL2023/containerd); a Unix-socket taint bridge from the proxy lets the least-privilege capabilities posture reach EXFIL verdicts without privileged <code>/proc</code> reads</li>
               <li>Prometheus metrics, OCSF SIEM export, Slack and PagerDuty trip webhooks</li>
-              <li>178 tests, including known-gap tests that assert what each detector misses; ~0.5ms overhead engine-on versus passthrough on sensitive reads (a local benchmark, not a production SLO)</li>
+              <li>Evaluated against 15 attack reconstructions spanning 7 disclosed CVE families: 12 reached an EXFIL verdict, with zero false positives across 37 benign scenarios and three detection gaps documented rather than closed</li>
+              <li>336 Go tests behind CI race and benchmark gates, including known-gap tests that assert what each detector misses; ~0.5ms overhead engine-on versus passthrough on sensitive reads (a local benchmark, not a production SLO)</li>
             </ul>
           </div>
           <div class="panel panel--gaps">
             <p class="panel-label">Known gaps</p>
             <ul>
-              <li>Semantic or paraphrased exfiltration is out of scope for the EXFIL verdict: a secret described in natural language, carrying no registered byte form, will not be proven. Value overlap also stops at depth-4 nests and compressors other than gzip</li>
+              <li>Semantic or paraphrased exfiltration is out of scope for the EXFIL verdict: a secret described in natural language, carrying no registered byte form, will not be proven. Value overlap stops at depth-5 nests, and the compressed forms are precomputed byte-exact, so they match an attacker who compresses the secret alone with the same library at the same level and miss otherwise</li>
               <li>eBPF contains by killing after a correlated <code>connect()</code> and <code>write()</code>, not before the first packet; in-kernel blocking via LSM/KRSI is not shipped. IPv6, <code>sendmsg</code> and <code>writev</code> are untraced, and DoH/DoT is explicitly out of scope</li>
             </ul>
           </div>
@@ -109,24 +110,25 @@
           <span class="entry-meta">2025–2026</span>
         </div>
         <p class="entry-lede">
-          A Zanzibar-inspired authorization engine answering "does subject S have relation R on
-          object O" over a relation-tuple graph, with recursive userset expansion and cycle
-          detection. Built to understand the tradeoffs from the implementer's side rather than
-          the consumer's.
+          A Zanzibar-inspired authorization database answering "does subject S have relation R on
+          object O" over a relation-tuple graph. It began on CockroachDB; the version that taught
+          me anything is the one where I replaced that with <strong>a Raft implementation written
+          from the paper</strong>, because borrowing someone else's consensus meant never having to
+          understand the part I actually wanted to understand.
         </p>
         <div class="ledger">
           <div class="panel panel--enforces">
             <p class="panel-label">Enforces</p>
             <ul>
               <li>Recursive relation-tuple expansion (Zanzibar-style) with cycle detection over a DAG of usersets</li>
-              <li>Zookie-based causal consistency using CockroachDB logical timestamps</li>
-              <li>Singleflight deduplication and an LRU cache with selective, not full-flush, invalidation on writes</li>
+              <li>Raft across 3 to 5 nodes: pre-vote, joint-consensus membership changes, learners, ReadIndex reads, log compaction and InstallSnapshot</li>
+              <li>MVCC storage, so a check reads a consistent snapshot without blocking concurrent writes</li>
               <li>Reverse expansion (list all subjects with a relation) alongside forward checks</li>
-              <li>Direct checks run in low single-digit microseconds on the hot path in Go benchmarks (~1.2μs/op); sub-10ms end-to-end is the target, not yet measured against production traffic</li>
+              <li>KV operation histories checked for linearizability with Porcupine across 2,000 deterministic simulation seeds</li>
             </ul>
           </div>
         </div>
-        <p class="stack">Go · CockroachDB · gRPC · Prometheus</p>
+        <p class="stack">Go · gRPC · Raft · MVCC</p>
       </article>
 
       <article class="entry">
@@ -179,12 +181,39 @@
             <ul>
               <li>Single Kafka retry topic with <code>retry_after</code>; exhausted events land in a Postgres DLQ, chosen over a Kafka topic so replay gets filtering and pagination</li>
               <li><code>tenant_id</code> kept off ingest metric labels to protect Prometheus cardinality</li>
-              <li>REST and gRPC ingest share one internal service path; HMAC-signed delivery with retries and dead-letter replay</li>
-              <li>~50 events/sec sustained ingest (750 requests, 100% <code>202</code>), delivery p99 ~2.5ms with 99.7% of deliveries under 2.5ms (measured on local Docker Compose under vegeta, not a cloud deployment)</li>
+              <li>REST and gRPC ingest share one internal service path; HMAC-signed delivery with idempotency keys, retries and dead-letter replay</li>
+              <li>Crash recovery validated by <code>SIGKILL</code>ing the consumer under load, then reconciling all 16,001 published events against delivery-attempt and dead-letter records: zero events left without an attempt</li>
+              <li>~50 events/sec sustained ingest (750 requests, 100% <code>202</code>), delivery p99 ~2.5ms with 99.7% of deliveries under 2.5ms (measured on local Docker Compose under vegeta; the AWS deployment is not load-tested)</li>
+              <li>Provisioned on AWS with Terraform (EKS with IRSA, MSK, RDS, S3), deployed with Helm, instrumented with Prometheus</li>
             </ul>
           </div>
         </div>
-        <p class="stack">Go · PostgreSQL · Kafka · Redis</p>
+        <p class="stack">Go · Kafka · PostgreSQL · Redis · Terraform · AWS</p>
+      </article>
+
+      <article class="entry">
+        <div class="entry-head">
+          <h2 class="entry-name">Ratchet</h2>
+          <span class="entry-meta">2026</span>
+        </div>
+        <p class="entry-lede">
+          An incremental ELT sync engine and connector SDK in Java 21. The whole design turns on
+          one rule: <strong>the sync cursor advances only after the data is durable</strong>, so a
+          crash replays a window of work instead of skipping it. The failure mode I wanted was
+          duplicated effort, never silent loss.
+        </p>
+        <div class="ledger">
+          <div class="panel panel--enforces">
+            <p class="panel-label">Enforces</p>
+            <ul>
+              <li>Cursor advance gated on durability, so every crash window replays rather than dropping rows</li>
+              <li>Verified at 500,000 rows through 50 seeded <code>SIGKILL</code>s, checksums matching on every run</li>
+              <li>Apache Arrow in memory, Parquet on disk</li>
+              <li>A connector SDK, so adding a source is an implementation against an interface rather than a change to the engine</li>
+            </ul>
+          </div>
+        </div>
+        <p class="stack">Java 21 · Apache Arrow · Apache Parquet · JUnit</p>
       </article>
     </section>
 
@@ -196,12 +225,14 @@
           <h2 class="role-name">Credible Data</h2>
           <span class="role-meta">Aug 2025 – May 2026</span>
         </div>
-        <p class="role-title">Software Engineer · Boulder, CO</p>
+        <p class="role-title">Software Engineer · Boulder, CO · Part-time</p>
         <ul class="role-points">
           <li>Shipped the Express/Node.js backend for an AI-native data-discovery platform: Server-Sent Events chat streaming, dataset search, Malloy execution over PostgreSQL 16, Neo4j graph lineage, and BigQuery</li>
           <li>Cut API P95 by 60%, 1.2s to 480ms in production, through connection-pool tuning, <code>EXPLAIN ANALYZE</code> on hot query plans, and an index redesign that eliminated sequential scans on high-cardinality columns</li>
-          <li>Guaranteed at-least-once delivery with idempotent consumers via a graph outbox spanning PostgreSQL and Neo4j: zero data loss, full audit lineage on every state mutation</li>
-          <li>Routed natural-language questions through the Claude Agent SDK and a custom MCP server over JSON-RPC, secured behind an Auth0/JWT gateway with role-scoped middleware across 10+ route groups</li>
+          <li>Designed event-driven sync from PostgreSQL to Neo4j with the transactional outbox pattern, committing the outbox row in the same transaction as the business write, so an unreachable graph never fails a request</li>
+          <li>Implemented OAuth2/OIDC authentication and three-tier RBAC with Auth0, with scheduled admin-token refresh out of Google Secret Manager and 401 retry handling against the upstream provisioning API, so a provisioning failure routes to a retry endpoint rather than the sign-in path</li>
+          <li>Routed natural-language questions through the Claude Agent SDK and a custom MCP server over JSON-RPC, behind role-scoped middleware across 10+ route groups</li>
+          <li>Deployed on GCP Cloud Run through GitHub Actions CI/CD with workload identity federation</li>
         </ul>
       </article>
 
@@ -210,11 +241,11 @@
           <h2 class="role-name">IntelleWings</h2>
           <span class="role-meta">Feb 2023 – Jun 2024</span>
         </div>
-        <p class="role-title">Software Engineer Intern · Chandigarh, India</p>
+        <p class="role-title">Software Engineer Intern · Chandigarh, India (Remote)</p>
         <ul class="role-points">
-          <li>Shipped a Java and Spring Boot transaction-monitoring backend processing 100K+ transactions a month at sub-200ms in production, owning reliability: parameterized SQL, PII masking, audit logging</li>
-          <li>Cut query latency by 70%, 800ms to 240ms in production, with multi-tier caching across Redis and a local tier</li>
-          <li>Re-architected deployment pipelines on Jenkins, Docker and Kubernetes, shrinking release cycles from five days to three</li>
+          <li>Migrated a nightly anti-money-laundering screening batch to Apache Spark, processing 10 million records in 60 minutes over an ETL pipeline loading CSV extracts into MySQL</li>
+          <li>Converted the platform from single-tenant to multi-tenant, cutting infrastructure cost by isolating every customer inside one deployment instead of standing up a stack each</li>
+          <li>Built the ingestion parser aggregating 230+ external data sources, and migrated the C#/.NET codebase from .NET Core 5.0 to 8.0</li>
         </ul>
       </article>
     </section>
@@ -222,9 +253,20 @@
     <section class="block" aria-labelledby="os">
       <p class="eyebrow" id="os">Open source</p>
       <p class="standfirst">
-        Merged fixes in <a href="https://github.com/openfga/openfga">Auth0 OpenFGA</a> and
+        I found and privately disclosed a fail-open authorization vulnerability in
+        <a href="https://github.com/openfga/openfga">OpenFGA</a>, the CNCF-incubating authorization
+        engine built by Okta and used by Grafana and Docker: an exclusion clause erroring
+        mid-evaluation let <code>StreamedListObjects</code> emit objects whose access check never
+        completed. I wrote the fix, which shipped in v1.19.0 as
+        <a href="https://github.com/openfga/openfga/security/advisories/GHSA-5278-rrxc-mgf7">GHSA-5278-rrxc-mgf7</a>.
+      </p>
+      <p class="standfirst">
+        Also in OpenFGA, a Check API correctness bug fixed in v1.18.2
+        (<a href="https://github.com/openfga/openfga/pull/3225">PR #3225</a>) where the query
+        flattening pass tracked recursion as a single boolean, with regression tests covering both
+        recursive relations. Earlier merged fixes in
         <a href="https://github.com/malloydata/malloy">Google Malloy</a>, across query planning and
-        validation, including a consistency-token correctness fix in OpenFGA's Check API.
+        validation.
       </p>
     </section>
 

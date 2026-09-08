@@ -58,6 +58,11 @@ Two things that are easy to get wrong: `og:image` must be an absolute URL, and
 suffix is already in `og:site_name`, and repeating it truncates the real title
 in Slack and LinkedIn.
 
+The home page is the one exception: it has its own `card_home` block in the
+script, because it carries the site's thesis with capability in ultramarine and
+stated limits in brass. Edit that block directly rather than adding a `card`
+line for it.
+
 Card titles are sized by character count in buckets, so anything past ~120
 characters needs a new bucket in the script. After deploying, LinkedIn and Slack
 serve a cached preview; force a refresh through the
